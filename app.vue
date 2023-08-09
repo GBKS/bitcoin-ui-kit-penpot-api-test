@@ -33,11 +33,9 @@ function selectTab(value, info) {
 }
 
 onMounted(() => {
-  if(dev) {
-    file.value = fileData
+  file.value = fileData
 
-    console.log(fileData)
-  } else {
+  if(!dev) {
     loadData()
   }
 
@@ -77,9 +75,6 @@ async function loadData() {
 
   if(data && data.data != '') {
     file.value = data.data
-  } else {
-    console.log('Fallback to locall stored data')
-    file.value = fileData
   }
 
   if(file.value.data && file.value.data.colors) {
