@@ -1,8 +1,9 @@
 <script setup>
 import fileData from '@/_data/file.json'
 
-const dev = true
+const dev = !true
 const file = ref(null)
+const loadError = ref(null)
 const activeTabId = ref('colors')
 const colorPath = ref('Light')
 
@@ -36,8 +37,6 @@ onMounted(() => {
     file.value = fileData
 
     console.log(fileData)
-
-    setupColors()
   } else {
     loadData()
   }
@@ -48,10 +47,11 @@ onMounted(() => {
 function setupColors() {
   const root = document.querySelector(':root');
 
+  console.log('setupColors', file.value.data.colors)
+
   let colorId, color
   for(colorId in file.value.data.colors) {
     color = file.value.data.colors[colorId]
-    console.log(colorId, color)
 
     if(color.path == colorPath.value) {
       root.style.setProperty('--'+color.name, color.color);
@@ -68,11 +68,23 @@ async function testCall() {
 
 async function loadData() {
   const method = '/api/penpot/file'
-  const data = await $fetch(method).catch((error) => error.data)
+  const data = await $fetch(method).catch((error) => {
+    console.log('Load error', error)
+    loadError.value = error.data
+  })
 
-  console.log('data', data)
+  console.log(method, data)
 
-  file.value = data.data
+  if(data && data.data != '') {
+    file.value = data.data
+  } else {
+    console.log('Fallback to locall stored data')
+    file.value = fileData
+  }
+
+  if(file.value.data && file.value.data.colors) {
+    setupColors()
+  }
 }
 
 function toggleTheme() {
@@ -85,51 +97,58 @@ function toggleTheme() {
 
 <template>
   <div id="app">
-    <UiTabs
-      :activeId="activeTabId"
-      :info="tabInfo"
-      theme="theme"
-      @selectTab="selectTab"
-    />
+    <template v-if="file">
+      <UiTabs
+        :activeId="activeTabId"
+        :info="tabInfo"
+        theme="theme"
+        @selectTab="selectTab"
+      />
 
-    <button v-if="false" @click="toggleTheme">Theme</button>
+      <button v-if="false" @click="toggleTheme">Theme</button>
 
-    <Info
-      v-if="activeTabId == 'info'"
-      :info="file"
-    />
+      <Info
+        v-if="activeTabId == 'info'"
+        :info="file"
+      />
 
-    <FileList
-      v-if="activeTabId == 'files'"
-    />
+      <FileList
+        v-if="activeTabId == 'files'"
+      />
 
-    <PageList
-      v-if="activeTabId == 'pages' && file"
-      :info="file.data.pagesIndex"
-    />
+      <PageList
+        v-if="activeTabId == 'pages' && file"
+        :info="file.data.pagesIndex"
+      />
 
-    <ColorGroups
-      v-if="activeTabId == 'colors' && file"
-      :info="file.data.colors"
-    />
+      <ColorGroups
+        v-if="activeTabId == 'colors' && file"
+        :info="file.data.colors"
+      />
 
-    <TextStyleList
-      v-if="activeTabId == 'text-styles' && file"
-      :info="file.data.typographies"
-    />
+      <TextStyleList
+        v-if="activeTabId == 'text-styles' && file"
+        :info="file.data.typographies"
+      />
 
-    <ComponentModule
-      v-if="activeTabId == 'components' && file"
-      :info="file.data.components"
-      :colors="file.data.colors"
-    />
+      <ComponentModule
+        v-if="activeTabId == 'components' && file"
+        :info="file.data.components"
+        :colors="file.data.colors"
+      />
+    </template>
+    <template v-if="!file">
+      <p>Loading...</p>
+    </template>
   </div>
 </template>
 
 <style scoped lang="scss">
 
 #app {
-
+  > p {
+    text-align: center;
+  }
 }
 
 </style>
